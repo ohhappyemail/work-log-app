@@ -1,0 +1,1518 @@
+<title>업무 기록장</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Noto+Serif+KR:wght@600&display=swap">
+<style>
+  /* Layout: 한 칼럼 — 요약 띠 → 입력 카드 → 날짜별로 모은 기록 목록 */
+  :root {
+    --bg: #F1F4F2;
+    --surface: #FFFFFF;
+    --surface-2: #E7ECEA;
+    --fg: #16211F;
+    --muted: #5C6E6A;
+    --line: #D8E0DD;
+    --accent: #0C6B57;
+    --accent-fg: #FFFFFF;
+    --accent-wash: #E2F0EB;
+    --accent-dim: #93B7AB;
+    --danger: #9B2C2C;
+    --danger-wash: #F7E6E4;
+    --font-display: "Noto Serif KR", "Nanum Myeongjo", Georgia, serif;
+    --font-body: "IBM Plex Sans KR", "Malgun Gothic", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", "Consolas", monospace;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101614;
+      --surface: #18201E;
+      --surface-2: #212A28;
+      --fg: #E7EDEA;
+      --muted: #94A5A0;
+      --line: #2B3634;
+      --accent: #4FCCA9;
+      --accent-fg: #0B1412;
+      --accent-wash: #1C2E29;
+      --accent-dim: #2F6B5C;
+      --danger: #E98A82;
+      --danger-wash: #32211F;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101614;
+    --surface: #18201E;
+    --surface-2: #212A28;
+    --fg: #E7EDEA;
+    --muted: #94A5A0;
+    --line: #2B3634;
+    --accent: #4FCCA9;
+    --accent-fg: #0B1412;
+    --accent-wash: #1C2E29;
+    --accent-dim: #2F6B5C;
+    --danger: #E98A82;
+    --danger-wash: #32211F;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 32px 64px;
+  }
+
+  /* ── 머리말 ───────────────────────────── */
+  header { margin-bottom: 24px; }
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(26px, 6vw, 34px);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  .lede { color: var(--muted); margin: 0; font-size: 14px; }
+
+  /* ── 요약 띠 ───────────────────────────── */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .stat { background: var(--surface); padding: 14px 16px; min-width: 0; }
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-weight: 500;
+    display: block;
+  }
+  .stat-value {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 19px;
+    font-weight: 500;
+    margin-top: 2px;
+    display: block;
+  }
+  .stat-sub { font-size: 12px; color: var(--muted); }
+
+  /* ── 입력 카드 ─────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 28px;
+  }
+  .card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .card-title { font-weight: 600; font-size: 15px; }
+  form { display: grid; gap: 14px; }
+  .row { display: grid; gap: 14px; grid-template-columns: 150px 1fr; }
+  @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
+  .field { display: grid; gap: 5px; min-width: 0; }
+  label {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+  }
+  input, textarea {
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 9px 11px;
+    width: 100%;
+    min-width: 0;
+  }
+  input[type="date"], input[type="number"] {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  textarea { resize: vertical; min-height: 60px; line-height: 1.55; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .dur { display: flex; gap: 8px; align-items: center; }
+  .dur input { width: 72px; text-align: right; }
+  .dur span { font-size: 13px; color: var(--muted); }
+
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    padding: 9px 16px;
+    cursor: pointer;
+    background: var(--surface-2);
+    color: var(--fg);
+  }
+  button:hover { border-color: var(--line); }
+  .primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  .primary:hover { filter: brightness(1.08); }
+  .primary:disabled { opacity: .6; cursor: default; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .ghost { background: transparent; border-color: var(--line); color: var(--muted); }
+  .form-msg { font-size: 13px; color: var(--danger); min-height: 0; }
+  .form-msg:empty { display: none; }
+
+  /* ── 목록 ─────────────────────────────── */
+  .list-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .list-head h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+  }
+  #search { max-width: 220px; font-size: 14px; padding: 7px 10px; }
+
+  .day { margin-bottom: 20px; }
+  .day-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 2px 7px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 8px;
+  }
+  .day-date { font-weight: 600; font-size: 14px; }
+  .day-date .dow { color: var(--muted); font-weight: 400; }
+  .day-total {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .entry {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 7px;
+    display: grid;
+    gap: 7px;
+  }
+  .entry-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    justify-content: space-between;
+  }
+  .entry-task { font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+  .pill {
+    flex: none;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    background: var(--accent-wash);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 2px 10px;
+    white-space: nowrap;
+  }
+  .entry-memo {
+    font-size: 14px;
+    color: var(--muted);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .entry-tools { display: flex; gap: 6px; }
+  .entry-tools button {
+    font-size: 12px;
+    padding: 4px 10px;
+    background: transparent;
+    border-color: var(--line);
+    color: var(--muted);
+  }
+  .entry-tools .del-armed {
+    background: var(--danger-wash);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .entry-meta {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  /* 카드 안에서 바로 고치는 수정 모드 */
+  .entry.editing {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+    gap: 12px;
+  }
+  .editing-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .edit-grid { display: grid; gap: 12px; }
+
+  .note {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius);
+    padding: 22px 18px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .note strong { color: var(--fg); display: block; margin-bottom: 4px; font-weight: 600; }
+  .banner {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 11px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  /* ── 분석: 필터 바 ─────────────────────── */
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+  .filter-bar .field { min-width: 0; }
+  .filter-bar .grow { flex: 1 1 160px; }
+  .filter-bar input[type="date"] { width: 148px; }
+  .preset { display: flex; flex-wrap: wrap; gap: 5px; }
+  .preset button { font-size: 13px; padding: 8px 12px; background: var(--bg); border-color: var(--line); }
+  .preset button.on {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  /* ── 분석: 차트 ────────────────────────── */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .chart-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .chart-head h3 { font-size: 14px; font-weight: 600; margin: 0; }
+  .chart-note { font-size: 12px; color: var(--muted); }
+  .chart-body { position: relative; }
+  .chart-body svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .hit { fill: transparent; }
+  .hit:focus-visible { outline: 2px solid var(--accent); }
+  .tip {
+    position: absolute;
+    z-index: 5;
+    background: var(--fg);
+    color: var(--bg);
+    font-size: 12px;
+    line-height: 1.45;
+    padding: 6px 9px;
+    border-radius: 6px;
+    pointer-events: none;
+    white-space: pre;
+  }
+
+  /* 업무별 수평 막대 */
+  .hbars { display: grid; gap: 13px; }
+  .hbar-row { display: block; }
+  .hbar-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  .hbar-label { display: flex; gap: 10px; justify-content: space-between; margin-bottom: 5px; }
+  .hbar-name {
+    font-size: 13px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hbar-val {
+    flex: none;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .hbar-track { height: 14px; background: var(--accent-wash); border-radius: 0 4px 4px 0; }
+  .hbar-fill { height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; }
+  .hbar-fill.other { background: var(--accent-dim); }
+
+  /* 표로 보기 */
+  .table-twin { margin-top: 14px; }
+  .table-twin summary {
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    width: fit-content;
+  }
+  .table-scroll { overflow-x: auto; margin-top: 10px; }
+  table.agg { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.agg th, table.agg td {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  table.agg th { font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0.04em; }
+  table.agg .num {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  table.agg td.name { white-space: normal; overflow-wrap: anywhere; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    button, input, textarea { transition: border-color .15s, background .15s, filter .15s; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>업무 기록장</h1>
+    <p class="lede">날짜·업무명·소요시간·메모를 남기면 날짜별로 정리됩니다.</p>
+  </header>
+
+  <div class="banner" id="banner" hidden></div>
+
+  <section class="summary" aria-label="소요시간 요약">
+    <div class="stat">
+      <span class="stat-label">오늘</span>
+      <span class="stat-value" id="s-today">—</span>
+      <span class="stat-sub" id="s-today-sub">&nbsp;</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">이번 주</span>
+      <span class="stat-value" id="s-week">—</span>
+      <span class="stat-sub" id="s-week-sub">&nbsp;</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">이번 달</span>
+      <span class="stat-value" id="s-month">—</span>
+      <span class="stat-sub" id="s-month-sub">&nbsp;</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">전체</span>
+      <span class="stat-value" id="s-all">—</span>
+      <span class="stat-sub" id="s-all-sub">&nbsp;</span>
+    </div>
+  </section>
+
+  <section class="card" id="form-card">
+    <div class="card-head">
+      <span class="card-title">새 기록</span>
+    </div>
+    <form id="entry-form" novalidate>
+      <div class="row">
+        <div class="field">
+          <label for="f-date">날짜</label>
+          <input type="date" id="f-date" required>
+        </div>
+        <div class="field">
+          <label for="f-task">업무명</label>
+          <input type="text" id="f-task" maxlength="120" placeholder="예: 융자 서류 검토" autocomplete="off">
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-hours">소요시간</label>
+        <div class="dur">
+          <input type="number" id="f-hours" min="0" max="24" step="1" placeholder="0" aria-label="시간">
+          <span>시간</span>
+          <input type="number" id="f-mins" min="0" max="59" step="5" placeholder="0" aria-label="분">
+          <span>분</span>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-memo">메모</label>
+        <textarea id="f-memo" maxlength="2000" placeholder="무엇을 했고, 다음에 뭘 할지"></textarea>
+      </div>
+      <p class="form-msg" id="form-msg" role="status"></p>
+      <div class="actions">
+        <button type="submit" class="primary" id="submit-btn">기록 저장</button>
+      </div>
+    </form>
+  </section>
+
+  <section id="analysis">
+    <div class="list-head">
+      <h2>분석</h2>
+      <span class="chart-note" id="range-note"></span>
+    </div>
+
+    <div class="card">
+      <div class="filter-bar">
+        <div class="field">
+          <label>기간</label>
+          <div class="preset" id="presets">
+            <button type="button" data-preset="week">이번 주</button>
+            <button type="button" data-preset="month">이번 달</button>
+            <button type="button" data-preset="d30">최근 30일</button>
+            <button type="button" data-preset="all">전체</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-from">시작일</label>
+          <input type="date" id="f-from">
+        </div>
+        <div class="field">
+          <label for="f-to">종료일</label>
+          <input type="date" id="f-to">
+        </div>
+        <div class="field grow">
+          <label for="f-q">업무명·메모 검색</label>
+          <input type="search" id="f-q" placeholder="검색어">
+        </div>
+      </div>
+    </div>
+
+    <section class="summary" aria-label="선택한 기간 집계">
+      <div class="stat">
+        <span class="stat-label">총 소요시간</span>
+        <span class="stat-value" id="a-total">—</span>
+        <span class="stat-sub" id="a-total-sub">&nbsp;</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">하루 평균</span>
+        <span class="stat-value" id="a-avg">—</span>
+        <span class="stat-sub" id="a-avg-sub">&nbsp;</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">기록한 날</span>
+        <span class="stat-value" id="a-days">—</span>
+        <span class="stat-sub" id="a-days-sub">&nbsp;</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">업무 종류</span>
+        <span class="stat-value" id="a-kinds">—</span>
+        <span class="stat-sub" id="a-kinds-sub">&nbsp;</span>
+      </div>
+    </section>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <h3 id="time-title">일별 소요시간</h3>
+        <span class="chart-note" id="time-note"></span>
+      </div>
+      <div class="chart-body" id="chart-time"></div>
+      <details class="table-twin">
+        <summary>표로 보기</summary>
+        <div class="table-scroll" id="table-time"></div>
+      </details>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <h3>업무별 소요시간</h3>
+        <span class="chart-note" id="task-note"></span>
+      </div>
+      <div class="chart-body" id="chart-task"></div>
+      <details class="table-twin">
+        <summary>표로 보기</summary>
+        <div class="table-scroll" id="table-task"></div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <div class="list-head">
+      <h2>기록</h2>
+      <span class="chart-note" id="list-note"></span>
+    </div>
+    <div id="list">
+      <div class="note">
+        <strong>기록을 불러오는 중입니다</strong>
+        저장한 업무가 최근 날짜부터 여기에 쌓입니다.
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var COL = "entries";
+  var db = null;
+  var entries = [];
+  var loaded = false;
+  var statusNote = "";
+  var writable = true;        // null/true/false — 폼을 보여줄지
+  var edit = null;   // 수정 중인 기록 {id, date, task, hours, mins, memo, error, saving, focus, caret}
+  var armedDelete = null;
+  var armedTimer = null;
+  var loadTimer = null;
+  var filter = { preset: "month", from: "", to: "", q: "" };
+
+  /* ── 날짜·시간 도우미 ─────────────────── */
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  var DOW = ["일", "월", "화", "수", "목", "금", "토"];
+  var now = new Date();
+  var todayISO = iso(now);
+
+  function weekRange(d) {
+    var s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    s.setDate(s.getDate() - ((s.getDay() + 6) % 7));   // 월요일 시작
+    var e = new Date(s); e.setDate(s.getDate() + 6);
+    return [iso(s), iso(e)];
+  }
+  var WEEK = weekRange(now);
+  var MONTH = todayISO.slice(0, 7);
+
+  function fmtDur(m) {
+    m = Math.max(0, Math.round(m));
+    var h = Math.floor(m / 60), mm = m % 60;
+    if (h && mm) return h + "시간 " + mm + "분";
+    if (h) return h + "시간";
+    return mm + "분";
+  }
+  function fmtDay(s) {
+    var p = s.split("-");
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    var label = (+p[1]) + "월 " + (+p[2]) + "일";
+    if (+p[0] !== now.getFullYear()) label = p[0] + "년 " + label;
+    var rel = s === todayISO ? " · 오늘" : "";
+    return { label: label, dow: DOW[d.getDay()], rel: rel };
+  }
+
+  /* ── 요약 ─────────────────────────────── */
+  function sum(rows) {
+    var t = 0;
+    for (var i = 0; i < rows.length; i++) t += rows[i].minutes || 0;
+    return t;
+  }
+  function renderSummary() {
+    var sets = [
+      ["today", entries.filter(function (e) { return e.date === todayISO; })],
+      ["week", entries.filter(function (e) { return e.date >= WEEK[0] && e.date <= WEEK[1]; })],
+      ["month", entries.filter(function (e) { return e.date.slice(0, 7) === MONTH; })],
+      ["all", entries]
+    ];
+    for (var i = 0; i < sets.length; i++) {
+      var key = sets[i][0], rows = sets[i][1];
+      var value = !loaded ? "—" : rows.length ? fmtDur(sum(rows)) : "0분";
+      $("s-" + key).textContent = value;
+      $("s-" + key + "-sub").textContent = loaded ? rows.length + "건" : " ";
+    }
+  }
+
+  /* ── 목록 ─────────────────────────────── */
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function renderList() {
+    var host = $("list");
+    host.textContent = "";
+
+    if (!loaded) {
+      $("list-note").textContent = "";
+      var l = el("div", "note");
+      l.appendChild(el("strong", null, statusNote || "기록을 불러오는 중입니다"));
+      l.appendChild(document.createTextNode("저장한 업무가 최근 날짜부터 여기에 쌓입니다."));
+      host.appendChild(l);
+      return;
+    }
+
+    var rows = filtered();
+    $("list-note").textContent = rows.length
+      ? rows.length + "건 · " + fmtDur(sum(rows))
+      : "조건에 맞는 기록 없음";
+
+    // 수정 중인 기록은 필터에 걸러져도 계속 보여서 저장·취소를 할 수 있게 둔다
+    if (edit) {
+      var shown = rows.filter(function (e) { return e.id === edit.id; });
+      if (!shown.length) {
+        rows = rows.concat(entries.filter(function (e) { return e.id === edit.id; }));
+      }
+    }
+
+    if (!rows.length) {
+      var n = el("div", "note");
+      if (!entries.length) {
+        n.appendChild(el("strong", null, "아직 기록이 없습니다"));
+        n.appendChild(document.createTextNode(writable === false
+          ? "이 기록장을 만든 사람이 업무를 추가하면 여기에 보입니다."
+          : "위에서 날짜와 업무명을 넣고 저장하면 첫 기록이 생깁니다."));
+      } else {
+        n.appendChild(el("strong", null, "조건에 맞는 기록이 없습니다"));
+        n.appendChild(document.createTextNode("위 분석의 기간이나 검색어를 바꿔 보세요."));
+      }
+      host.appendChild(n);
+      return;
+    }
+
+    // 날짜별로 모으기 (최근 날짜 먼저)
+    var byDay = {}, order = [];
+    rows.forEach(function (e) {
+      if (!byDay[e.date]) { byDay[e.date] = []; order.push(e.date); }
+      byDay[e.date].push(e);
+    });
+    order.sort().reverse();
+
+    order.forEach(function (date) {
+      var group = byDay[date].slice().sort(function (a, b) {
+        return (a.createdAt || "").localeCompare(b.createdAt || "");
+      });
+      var sec = el("div", "day");
+      var head = el("div", "day-head");
+      var d = fmtDay(date);
+      var dl = el("div", "day-date");
+      dl.appendChild(document.createTextNode(d.label + " "));
+      dl.appendChild(el("span", "dow", "(" + d.dow + ")" + d.rel));
+      head.appendChild(dl);
+      head.appendChild(el("div", "day-total", fmtDur(sum(group)) + " · " + group.length + "건"));
+      sec.appendChild(head);
+
+      group.forEach(function (e) { sec.appendChild(entryNode(e)); });
+      host.appendChild(sec);
+    });
+
+    restoreEditFocus();
+  }
+
+  function entryNode(e) {
+    if (edit && edit.id === e.id && writable !== false) return editNode(e);
+
+    var card = el("div", "entry");
+    var top = el("div", "entry-top");
+    top.appendChild(el("div", "entry-task", e.task));
+    top.appendChild(el("div", "pill", fmtDur(e.minutes || 0)));
+    card.appendChild(top);
+
+    if (e.memo) card.appendChild(el("div", "entry-memo", e.memo));
+    if (e.updatedAt && e.createdAt && e.updatedAt !== e.createdAt) {
+      card.appendChild(el("div", "entry-meta", "수정됨"));
+    }
+
+    if (writable !== false) {
+      var tools = el("div", "entry-tools");
+      var editBtn = el("button", null, "수정");
+      editBtn.type = "button";
+      editBtn.addEventListener("click", function () { startEdit(e.id); });
+      var del = el("button", armedDelete === e.id ? "del-armed" : null,
+        armedDelete === e.id ? "한 번 더 누르면 삭제" : "삭제");
+      del.type = "button";
+      del.addEventListener("click", function () { onDelete(e.id); });
+      tools.appendChild(editBtn);
+      tools.appendChild(del);
+      card.appendChild(tools);
+    }
+    return card;
+  }
+
+  /* ── 수정 모드 (카드 안에서 바로 고치기) ── */
+  function bindEdit(node, key) {
+    node.id = "ed-" + key;
+    node.addEventListener("input", function () {
+      if (!edit) return;
+      edit[key] = node.value;
+      edit.focus = node.id;
+      try { edit.caret = node.selectionStart; } catch (x) { edit.caret = null; }
+    });
+    node.addEventListener("focus", function () { if (edit) edit.focus = node.id; });
+    return node;
+  }
+
+  function mkInput(type, value, key) {
+    var n = document.createElement("input");
+    n.type = type;
+    n.value = value == null ? "" : value;
+    return bindEdit(n, key);
+  }
+
+  function fieldNode(labelText, control, forId) {
+    var f = el("div", "field");
+    var lab = el("label", null, labelText);
+    lab.setAttribute("for", forId || control.id);
+    f.appendChild(lab);
+    f.appendChild(control);
+    return f;
+  }
+
+  function restoreEditFocus() {
+    if (!edit || !edit.focus) return;
+    var n = document.getElementById(edit.focus);
+    if (!n || n === document.activeElement) return;
+    n.focus();
+    if (edit.caret != null && n.setSelectionRange) {
+      try { n.setSelectionRange(edit.caret, edit.caret); } catch (x) {}
+    }
+  }
+
+  function endEdit() { edit = null; renderList(); }
+
+  function editNode(e) {
+    var card = el("div", "entry editing");
+    card.appendChild(el("div", "editing-label", "기록 수정 중"));
+
+    var grid = el("div", "edit-grid");
+
+    var row = el("div", "row");
+    row.appendChild(fieldNode("날짜", mkInput("date", edit.date, "date")));
+    var task = mkInput("text", edit.task, "task");
+    task.maxLength = 120;
+    task.autocomplete = "off";
+    row.appendChild(fieldNode("업무명", task));
+    grid.appendChild(row);
+
+    var dur = el("div", "dur");
+    var h = mkInput("number", edit.hours, "hours");
+    h.min = "0"; h.max = "24"; h.step = "1"; h.placeholder = "0";
+    h.setAttribute("aria-label", "시간");
+    var m = mkInput("number", edit.mins, "mins");
+    m.min = "0"; m.max = "59"; m.step = "5"; m.placeholder = "0";
+    m.setAttribute("aria-label", "분");
+    dur.appendChild(h);
+    dur.appendChild(el("span", null, "시간"));
+    dur.appendChild(m);
+    dur.appendChild(el("span", null, "분"));
+    grid.appendChild(fieldNode("소요시간", dur, "ed-hours"));
+
+    var ta = document.createElement("textarea");
+    ta.value = edit.memo;
+    ta.maxLength = 2000;
+    bindEdit(ta, "memo");
+    grid.appendChild(fieldNode("메모", ta));
+
+    card.appendChild(grid);
+    if (edit.error) card.appendChild(el("p", "form-msg", edit.error));
+
+    var actions = el("div", "actions");
+    var save = el("button", "primary", edit.saving ? "저장 중…" : "수정 저장");
+    save.type = "button";
+    save.disabled = !!edit.saving;
+    save.addEventListener("click", saveEdit);
+    var cancel = el("button", "ghost", "취소");
+    cancel.type = "button";
+    cancel.addEventListener("click", endEdit);
+    actions.appendChild(save);
+    actions.appendChild(cancel);
+    card.appendChild(actions);
+
+    card.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") { ev.preventDefault(); endEdit(); }
+      else if (ev.key === "Enter" && ev.target.tagName !== "TEXTAREA") {
+        ev.preventDefault();
+        saveEdit();
+      }
+    });
+    return card;
+  }
+
+  function editError(msg) {
+    if (!edit) return;
+    edit.error = msg;
+    edit.saving = false;
+    renderList();
+  }
+
+  function saveEdit() {
+    if (!edit || edit.saving) return;
+    var e = entries.filter(function (x) { return x.id === edit.id; })[0];
+    if (!e) return endEdit();
+
+    var task = edit.task.trim();
+    var h = parseInt(edit.hours, 10); if (isNaN(h) || h < 0) h = 0;
+    var m = parseInt(edit.mins, 10); if (isNaN(m) || m < 0) m = 0;
+    var minutes = h * 60 + m;
+
+    if (!edit.date) return editError("날짜를 선택하세요.");
+    if (!task) return editError("업무명을 적어주세요.");
+    if (minutes <= 0) return editError("소요시간을 시간이나 분으로 입력하세요.");
+    if (minutes > 24 * 60) return editError("하루 소요시간은 24시간까지 입력할 수 있습니다.");
+    if (!db) return editError("지금은 저장할 수 없습니다. 기록장을 다시 열어 보세요.");
+
+    var body = {
+      date: edit.date,
+      task: task,
+      minutes: minutes,
+      memo: edit.memo.trim(),
+      createdAt: e.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    edit.saving = true;
+    edit.error = "";
+    renderList();
+
+    db.collection(COL).doc(e.id).set(body).then(function () {
+      endEdit();
+    })["catch"](function (err) {
+      var msg = writeError(err, "저장");
+      if (edit) editError(msg); else renderList();
+    });
+  }
+
+  /* ── 분석: 기간·키워드 필터 ─────────────── */
+  function parseISO(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function addDays(s, n) { var d = parseISO(s); d.setDate(d.getDate() + n); return iso(d); }
+  function dayDiff(a, b) { return Math.round((parseISO(b) - parseISO(a)) / 86400000); }
+  function mondayOf(s) {
+    var d = parseISO(s);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return iso(d);
+  }
+
+  function activeRange() {
+    if (filter.preset === "all") return ["", ""];
+    if (filter.preset === "custom") return [filter.from, filter.to];
+    if (filter.preset === "week") return [WEEK[0], WEEK[1]];
+    if (filter.preset === "d30") return [addDays(todayISO, -29), todayISO];
+    return [MONTH + "-01", iso(new Date(now.getFullYear(), now.getMonth() + 1, 0))];
+  }
+
+  function filtered() {
+    var r = activeRange();
+    var q = filter.q.trim().toLowerCase();
+    return entries.filter(function (e) {
+      if (r[0] && e.date < r[0]) return false;
+      if (r[1] && e.date > r[1]) return false;
+      if (q && (e.task + " " + (e.memo || "")).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    });
+  }
+
+  function rangeLabel() {
+    var r = activeRange();
+    if (!r[0] && !r[1]) return "전체 기간";
+    if (r[0] && r[1]) return r[0] + " ~ " + r[1];
+    if (r[0]) return r[0] + " 이후";
+    return r[1] + " 이전";
+  }
+
+  /* ── 분석: 집계 ────────────────────────── */
+  function taskAgg(rows) {
+    var map = Object.create(null), order = [];
+    rows.forEach(function (e) {
+      if (!map[e.task]) { map[e.task] = { task: e.task, minutes: 0, count: 0 }; order.push(e.task); }
+      map[e.task].minutes += e.minutes || 0;
+      map[e.task].count += 1;
+    });
+    var arr = order.map(function (k) { return map[k]; });
+    arr.sort(function (a, b) { return b.minutes - a.minutes || a.task.localeCompare(b.task); });
+    return arr;
+  }
+
+  // 기간을 일/주/월 단위로 나눠, 기록 없는 구간도 0으로 채운다
+  function timeBuckets(rows) {
+    var min = rows[0].date, max = rows[0].date;
+    rows.forEach(function (e) {
+      if (e.date < min) min = e.date;
+      if (e.date > max) max = e.date;
+    });
+    var r = activeRange();
+    var start = r[0] && r[0] < min ? r[0] : min;
+    var cap = max > todayISO ? max : todayISO;
+    var end = r[1] && r[1] < cap ? r[1] : cap;
+    if (end < max) end = max;
+
+    var span = dayDiff(start, end) + 1;
+    var unit = span <= 31 ? "day" : span <= 182 ? "week" : "month";
+
+    var map = Object.create(null);
+    rows.forEach(function (e) {
+      var k = unit === "day" ? e.date : unit === "week" ? mondayOf(e.date) : e.date.slice(0, 7);
+      if (!map[k]) map[k] = { minutes: 0, count: 0 };
+      map[k].minutes += e.minutes || 0;
+      map[k].count += 1;
+    });
+
+    var keys = [], guard = 0;
+    if (unit === "day") {
+      for (var d = start; d <= end && guard++ < 400; d = addDays(d, 1)) keys.push(d);
+    } else if (unit === "week") {
+      for (var w = mondayOf(start); w <= end && guard++ < 400; w = addDays(w, 7)) keys.push(w);
+    } else {
+      var ym = start.slice(0, 7), endYm = end.slice(0, 7);
+      while (ym <= endYm && guard++ < 400) {
+        keys.push(ym);
+        var y = +ym.slice(0, 4), mo = +ym.slice(5, 7) + 1;
+        if (mo > 12) { mo = 1; y++; }
+        ym = y + "-" + pad(mo);
+      }
+    }
+
+    var data = keys.map(function (k) {
+      var v = map[k] || { minutes: 0, count: 0 };
+      return {
+        key: k,
+        label: bucketLabel(k, unit, false),
+        tip: bucketLabel(k, unit, true),
+        minutes: v.minutes,
+        count: v.count
+      };
+    });
+    return { unit: unit, data: data };
+  }
+
+  function bucketLabel(k, unit, full) {
+    if (unit === "month") {
+      var y = k.slice(0, 4), mo = +k.slice(5, 7);
+      if (full) return y + "년 " + mo + "월";
+      return (+y === now.getFullYear() ? "" : y.slice(2) + ".") + mo + "월";
+    }
+    var p = k.split("-");
+    if (unit === "week") {
+      var endK = addDays(k, 6).split("-");
+      if (full) return (+p[1]) + "/" + (+p[2]) + " ~ " + (+endK[1]) + "/" + (+endK[2]) + " 주";
+      return (+p[1]) + "/" + (+p[2]);
+    }
+    if (full) {
+      var d = fmtDay(k);
+      return d.label + " (" + d.dow + ")";
+    }
+    return (+p[1]) + "/" + (+p[2]);
+  }
+
+  /* ── 분석: 그리기 도구 ──────────────────── */
+  function svgEl(tag, attrs) {
+    var n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+
+  // 위쪽만 둥근 막대 (바닥은 각지게)
+  function topRounded(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h);
+    return "M" + x + "," + (y + h) +
+      " L" + x + "," + (y + r) +
+      " Q" + x + "," + y + " " + (x + r) + "," + y +
+      " L" + (x + w - r) + "," + y +
+      " Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) +
+      " L" + (x + w) + "," + (y + h) + " Z";
+  }
+
+  function niceStep(maxMin) {
+    var c = [15, 30, 60, 120, 180, 240, 360, 480, 720, 1440, 2880, 5760];
+    for (var i = 0; i < c.length; i++) if (maxMin / c[i] <= 4) return c[i];
+    return c[c.length - 1];
+  }
+
+  function makeTip(host) {
+    var tip = el("div", "tip");
+    tip.hidden = true;
+    host.appendChild(tip);
+    return tip;
+  }
+
+  function attachTip(mark, host, tip, text) {
+    function show() {
+      tip.textContent = text;
+      tip.hidden = false;
+      tip.style.left = "0px";
+      tip.style.top = "0px";
+      var hb = host.getBoundingClientRect();
+      var mb = mark.getBoundingClientRect();
+      var x = mb.left - hb.left + mb.width / 2 - tip.offsetWidth / 2;
+      var y = mb.top - hb.top - tip.offsetHeight - 8;
+      if (y < 0) y = mb.top - hb.top + mb.height + 8;
+      x = Math.max(2, Math.min(hb.width - tip.offsetWidth - 2, x));
+      tip.style.left = x + "px";
+      tip.style.top = y + "px";
+    }
+    function hide() { tip.hidden = true; }
+    mark.addEventListener("mouseenter", show);
+    mark.addEventListener("mouseleave", hide);
+    mark.addEventListener("focus", show);
+    mark.addEventListener("blur", hide);
+  }
+
+  function chartNote(host, text) {
+    host.textContent = "";
+    host.appendChild(el("div", "note", text));
+  }
+
+  /* ── 분석: 기간별 막대 그래프 ───────────── */
+  function renderTimeChart(host, data) {
+    host.textContent = "";
+    var tip = makeTip(host);
+
+    var W = 720, PL = 44, PR = 12, PT = 22, PH = 170, PB = 28;
+    var H = PT + PH + PB;
+    var s = svgEl("svg", { viewBox: "0 0 " + W + " " + H, role: "img" });
+    s.setAttribute("aria-label", "기간별 소요시간 막대 그래프");
+
+    var maxV = 0;
+    data.forEach(function (d) { if (d.minutes > maxV) maxV = d.minutes; });
+    var step = niceStep(maxV);
+    var yMax = Math.max(step, Math.ceil(maxV / step) * step);
+    var inMin = yMax < 120;
+
+    for (var v = 0; v <= yMax + 0.5; v += step) {
+      var gy = PT + PH - (v / yMax) * PH;
+      s.appendChild(svgEl("line", {
+        x1: PL, y1: gy, x2: W - PR, y2: gy, stroke: "var(--line)", "stroke-width": 1
+      }));
+      var tk = svgEl("text", {
+        x: PL - 8, y: gy + 4, "text-anchor": "end", fill: "var(--muted)", "font-size": 11
+      });
+      tk.textContent = inMin ? String(v) : String(Math.round(v / 6) / 10);
+      s.appendChild(tk);
+    }
+    var unitTx = svgEl("text", {
+      x: PL - 8, y: PT - 8, "text-anchor": "end", fill: "var(--muted)", "font-size": 10
+    });
+    unitTx.textContent = inMin ? "(분)" : "(시간)";
+    s.appendChild(unitTx);
+
+    var plotW = W - PL - PR;
+    var band = plotW / data.length;
+    var barW = Math.max(2, Math.min(24, band - 4));
+    var topIdx = -1;
+    data.forEach(function (d, i) {
+      if (d.minutes > 0 && (topIdx < 0 || d.minutes > data[topIdx].minutes)) topIdx = i;
+    });
+    var every = Math.ceil(data.length / 8);
+
+    data.forEach(function (d, i) {
+      var cx = PL + band * (i + 0.5);
+      var h = (d.minutes / yMax) * PH;
+
+      if (d.minutes > 0) {
+        var bh = Math.max(2, h);
+        var bar = svgEl("path", {
+          d: topRounded(cx - barW / 2, PT + PH - bh, barW, bh, 4),
+          fill: "var(--accent)"
+        });
+        bar.setAttribute("pointer-events", "none");
+        s.appendChild(bar);
+      }
+
+      var hit = svgEl("rect", {
+        x: cx - band / 2, y: PT, width: band, height: PH, "class": "hit", tabindex: 0, role: "img"
+      });
+      var text = d.tip + "\n" + (d.minutes ? fmtDur(d.minutes) + " · " + d.count + "건" : "기록 없음");
+      hit.setAttribute("aria-label", text.replace("\n", " "));
+      attachTip(hit, host, tip, text);
+      s.appendChild(hit);
+
+      if (i % every === 0 || i === data.length - 1) {
+        var xt = svgEl("text", {
+          x: cx, y: H - 9, "text-anchor": "middle", fill: "var(--muted)", "font-size": 11
+        });
+        xt.textContent = d.label;
+        s.appendChild(xt);
+      }
+
+      if (i === topIdx) {
+        var vt = svgEl("text", {
+          x: Math.max(PL + 26, Math.min(W - PR - 26, cx)),
+          y: PT + PH - h - 7,
+          "text-anchor": "middle", fill: "var(--fg)", "font-size": 11, "font-weight": 600
+        });
+        vt.textContent = fmtDur(d.minutes);
+        s.appendChild(vt);
+      }
+    });
+
+    host.appendChild(s);
+  }
+
+  /* ── 분석: 업무별 수평 막대 ─────────────── */
+  function renderTaskChart(host, agg, total) {
+    host.textContent = "";
+    var tip = makeTip(host);
+
+    var TOP = 6;
+    var items = agg.slice(0, TOP).map(function (a) {
+      return { name: a.task, minutes: a.minutes, count: a.count, other: false };
+    });
+    var rest = agg.slice(TOP);
+    if (rest.length) {
+      var m = 0, c = 0;
+      rest.forEach(function (a) { m += a.minutes; c += a.count; });
+      items.push({ name: "그 외 " + rest.length + "개 업무", minutes: m, count: c, other: true });
+    }
+
+    var maxV = 0;
+    items.forEach(function (it) { if (it.minutes > maxV) maxV = it.minutes; });
+
+    var box = el("div", "hbars");
+    items.forEach(function (it) {
+      var pct = total ? Math.round(it.minutes / total * 1000) / 10 : 0;
+      var row = el("div", "hbar-row");
+      row.tabIndex = 0;
+      row.setAttribute("role", "img");
+
+      var lab = el("div", "hbar-label");
+      var nm = el("span", "hbar-name", it.name);
+      nm.title = it.name;
+      lab.appendChild(nm);
+      lab.appendChild(el("span", "hbar-val", fmtDur(it.minutes)));
+      row.appendChild(lab);
+
+      var track = el("div", "hbar-track");
+      var fill = el("div", "hbar-fill" + (it.other ? " other" : ""));
+      fill.style.width = (maxV ? Math.max(1.5, it.minutes / maxV * 100) : 0) + "%";
+      track.appendChild(fill);
+      row.appendChild(track);
+
+      var text = it.name + "\n" + fmtDur(it.minutes) + " · " + it.count + "건 · " + pct + "%";
+      row.setAttribute("aria-label", text.replace("\n", " "));
+      attachTip(row, host, tip, text);
+      box.appendChild(row);
+    });
+    host.appendChild(box);
+  }
+
+  /* ── 분석: 표로 보기 ───────────────────── */
+  function buildTable(host, head, rows) {
+    host.textContent = "";
+    var t = el("table", "agg");
+    var thead = document.createElement("thead");
+    var hr = document.createElement("tr");
+    head.forEach(function (h, i) {
+      var th = el("th", i === 0 ? "name" : "num", h);
+      hr.appendChild(th);
+    });
+    thead.appendChild(hr);
+    t.appendChild(thead);
+    var tb = document.createElement("tbody");
+    rows.forEach(function (r) {
+      var tr = document.createElement("tr");
+      r.forEach(function (cell, i) {
+        tr.appendChild(el("td", i === 0 ? "name" : "num", cell));
+      });
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb);
+    host.appendChild(t);
+  }
+
+  /* ── 분석: 전체 그리기 ─────────────────── */
+  function renderAnalysis() {
+    var q = filter.q.trim();
+    $("range-note").textContent = rangeLabel() + (q ? " · ‘" + q + "’" : "");
+
+    function tile(id, value, sub) {
+      $("a-" + id).textContent = value;
+      $("a-" + id + "-sub").textContent = sub || " ";
+    }
+
+    if (!loaded) {
+      tile("total", "—"); tile("avg", "—"); tile("days", "—"); tile("kinds", "—");
+      chartNote($("chart-time"), statusNote || "기록을 불러오는 중입니다");
+      chartNote($("chart-task"), statusNote || "기록을 불러오는 중입니다");
+      $("table-time").textContent = "";
+      $("table-task").textContent = "";
+      return;
+    }
+
+    var rows = filtered();
+    var total = sum(rows);
+    var dayMap = Object.create(null);
+    rows.forEach(function (e) { dayMap[e.date] = 1; });
+    var dayKeys = Object.keys(dayMap).sort();
+    var dayCount = dayKeys.length;
+    var agg = taskAgg(rows);
+
+    tile("total", rows.length ? fmtDur(total) : "0분", rows.length + "건");
+    tile("avg", dayCount ? fmtDur(total / dayCount) : "0분", "기록한 날 기준");
+    tile("days", dayCount + "일", dayCount ? "최근 " + dayKeys[dayCount - 1] : "");
+    tile("kinds", agg.length + "개", agg.length ? "1위 " + agg[0].task : "");
+
+    if (!rows.length) {
+      var msg = "선택한 기간에 기록이 없습니다. 기간이나 검색어를 바꿔 보세요.";
+      chartNote($("chart-time"), msg);
+      chartNote($("chart-task"), msg);
+      $("table-time").textContent = "";
+      $("table-task").textContent = "";
+      $("time-title").textContent = "기간별 소요시간";
+      $("time-note").textContent = "";
+      $("task-note").textContent = "";
+      return;
+    }
+
+    var b = timeBuckets(rows);
+    $("time-title").textContent =
+      (b.unit === "day" ? "일별" : b.unit === "week" ? "주별" : "월별") + " 소요시간";
+    $("time-note").textContent =
+      (b.unit === "day" ? "하루 단위" : b.unit === "week" ? "주 단위 (월요일 시작)" : "월 단위")
+      + " · 가장 많은 구간만 값 표시";
+    renderTimeChart($("chart-time"), b.data);
+    buildTable($("table-time"), ["구간", "건수", "소요시간"], b.data.map(function (d) {
+      return [d.tip, d.count + "건", d.minutes ? fmtDur(d.minutes) : "—"];
+    }));
+
+    // 업무가 한 종류면 막대 하나를 그리는 대신 숫자로 말한다
+    if (agg.length < 2) {
+      $("task-note").textContent = "";
+      chartNote($("chart-task"), "업무가 한 종류입니다 · " + agg[0].task + " " + fmtDur(agg[0].minutes));
+    } else {
+      $("task-note").textContent = agg.length > 6 ? "상위 6개 + 그 외" : agg.length + "개 업무";
+      renderTaskChart($("chart-task"), agg, total);
+    }
+    buildTable($("table-task"), ["업무명", "건수", "소요시간", "비중"], agg.map(function (a) {
+      return [
+        a.task,
+        a.count + "건",
+        fmtDur(a.minutes),
+        (total ? Math.round(a.minutes / total * 1000) / 10 : 0) + "%"
+      ];
+    }));
+  }
+
+  function renderAll() { renderSummary(); renderAnalysis(); renderList(); }
+
+  /* ── 폼 ───────────────────────────────── */
+  function setMsg(t) { $("form-msg").textContent = t || ""; }
+
+  function resetForm() {
+    $("entry-form").reset();
+    $("f-date").value = todayISO;
+    setMsg("");
+  }
+
+  function startEdit(id) {
+    var e = entries.filter(function (x) { return x.id === id; })[0];
+    if (!e) return;
+    clearTimeout(armedTimer);
+    armedDelete = null;
+    edit = {
+      id: id,
+      date: e.date,
+      task: e.task,
+      hours: String(Math.floor((e.minutes || 0) / 60) || ""),
+      mins: String((e.minutes || 0) % 60 || ""),
+      memo: e.memo || "",
+      error: "",
+      saving: false,
+      focus: "ed-task",
+      caret: (e.task || "").length
+    };
+    renderList();
+  }
+
+  function onDelete(id) {
+    if (armedDelete !== id) {
+      armedDelete = id;
+      clearTimeout(armedTimer);
+      armedTimer = setTimeout(function () { armedDelete = null; renderList(); }, 4000);
+      renderList();
+      return;
+    }
+    clearTimeout(armedTimer);
+    armedDelete = null;
+    if (!db) { renderList(); return; }
+    db.collection(COL).doc(id).delete().then(function () {
+      if (edit && edit.id === id) endEdit();
+    })["catch"](function (err) {
+      setMsg(writeError(err, "삭제"));
+    });
+    renderList();
+  }
+
+  function writeError(err, verb) {
+    var code = err && err.code;
+    if (code === "invalid_argument" || code === "not_granted") {
+      writable = false;
+      renderList();
+      return "이 기록장에 " + verb + "할 권한이 없습니다. 보기 전용으로 열려 있습니다.";
+    }
+    if (code === "quota_exceeded") return "저장 공간이 꽉 찼습니다. 오래된 기록을 지운 뒤 다시 시도하세요.";
+    if (code === "resource_exhausted") return "요청이 너무 잦습니다. 잠시 뒤 다시 시도하세요.";
+    return verb + "하지 못했습니다. 잠시 뒤 다시 시도하세요.";
+  }
+
+  var saving = false;
+  $("entry-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if (saving) return;
+
+    var date = $("f-date").value;
+    var task = $("f-task").value.trim();
+    var h = parseInt($("f-hours").value, 10); if (isNaN(h) || h < 0) h = 0;
+    var m = parseInt($("f-mins").value, 10); if (isNaN(m) || m < 0) m = 0;
+    var minutes = h * 60 + m;
+
+    if (!date) return setMsg("날짜를 선택하세요.");
+    if (!task) { setMsg("업무명을 적어주세요."); $("f-task").focus(); return; }
+    if (minutes <= 0) { setMsg("소요시간을 시간이나 분으로 입력하세요."); $("f-hours").focus(); return; }
+    if (minutes > 24 * 60) return setMsg("하루 소요시간은 24시간까지 입력할 수 있습니다.");
+    if (!db) return setMsg("지금은 저장할 수 없습니다. 기록장을 다시 열어 보세요.");
+
+    var id = "e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    var stamp = new Date().toISOString();
+    var body = {
+      date: date,
+      task: task,
+      minutes: minutes,
+      memo: $("f-memo").value.trim(),
+      createdAt: stamp,
+      updatedAt: stamp
+    };
+
+    saving = true;
+    $("submit-btn").disabled = true;
+    setMsg("");
+    db.collection(COL).doc(id).set(body).then(function () {
+      resetForm();
+      $("f-task").focus();
+    })["catch"](function (err) {
+      setMsg(writeError(err, "저장"));
+    })["then"](function () {
+      saving = false;
+      $("submit-btn").disabled = false;
+    });
+  });
+
+  /* ── 필터 조작 ─────────────────────────── */
+  function markPresets() {
+    var btns = $("presets").getElementsByTagName("button");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].className = btns[i].getAttribute("data-preset") === filter.preset ? "on" : "";
+    }
+  }
+
+  function applyPreset(p) {
+    filter.preset = p;
+    var r = activeRange();
+    filter.from = r[0];
+    filter.to = r[1];
+    $("f-from").value = r[0];
+    $("f-to").value = r[1];
+    markPresets();
+    renderAnalysis();
+    renderList();
+  }
+
+  $("presets").addEventListener("click", function (ev) {
+    var p = ev.target && ev.target.getAttribute && ev.target.getAttribute("data-preset");
+    if (p) applyPreset(p);
+  });
+
+  function onRangeEdit() {
+    filter.preset = "custom";
+    filter.from = $("f-from").value;
+    filter.to = $("f-to").value;
+    markPresets();
+    renderAnalysis();
+    renderList();
+  }
+  $("f-from").addEventListener("change", onRangeEdit);
+  $("f-to").addEventListener("change", onRangeEdit);
+
+  var qTimer = null;
+  $("f-q").addEventListener("input", function () {
+    filter.q = $("f-q").value;
+    clearTimeout(qTimer);
+    qTimer = setTimeout(function () { renderAnalysis(); renderList(); }, 150);
+  });
+
+  applyPreset(filter.preset);
+  $("f-date").value = todayISO;
+
+  function banner(text) {
+    var b = $("banner");
+    if (!text) { b.hidden = true; return; }
+    b.textContent = text;
+    b.hidden = false;
+  }
+
+  /* ── 저장소 연결 ───────────────────────── */
+  function readOnlyMode(text) {
+    writable = false;
+    $("form-card").hidden = true;
+    banner(text);
+    renderAll();
+  }
+
+  var use = (window.claude && window.claude.use)
+    ? function (n) { return window.claude.use(n); }
+    : function () { return Promise.resolve(null); };
+
+  use("db").then(function (store) {
+    if (!store) {
+      statusNote = "기록을 불러올 수 없습니다";
+      readOnlyMode("이 화면에서는 기록을 읽고 쓸 수 없습니다. claude.ai에 로그인한 채로 이 기록장을 열면 저장됩니다.");
+      return;
+    }
+    db = store;
+
+    loadTimer = setTimeout(function () {
+      if (!loaded) { statusNote = "기록을 아직 가져오지 못했습니다"; renderList(); }
+      else banner("기록이 최신이 아닐 수 있습니다. 연결이 돌아오면 자동으로 갱신됩니다.");
+    }, 10000);
+
+    db.collection(COL).orderBy("date", "desc").onSnapshot(function (snap) {
+      var next = [];
+      snap.docs.forEach(function (doc) {
+        var d = doc.data() || {};
+        if (typeof d.date !== "string" || !d.date) return;
+        next.push({
+          id: doc.id,
+          date: d.date,
+          task: typeof d.task === "string" && d.task ? d.task : "(제목 없음)",
+          minutes: typeof d.minutes === "number" ? d.minutes : 0,
+          memo: typeof d.memo === "string" ? d.memo : "",
+          createdAt: typeof d.createdAt === "string" ? d.createdAt : "",
+          updatedAt: typeof d.updatedAt === "string" ? d.updatedAt : ""
+        });
+      });
+      entries = next;
+      loaded = true;
+      if (!snap.metadata.fromCache) { clearTimeout(loadTimer); banner(""); }
+      renderAll();
+    }, function (err) {
+      clearTimeout(loadTimer);
+      loaded = true;
+      statusNote = "기록을 불러오지 못했습니다";
+      if (err && (err.code === "revoked" || err.code === "not_granted")) {
+        readOnlyMode("이 기록장에 접근할 수 없습니다.");
+      } else {
+        banner("기록을 불러오지 못했습니다. 페이지를 새로 열어 보세요.");
+        renderAll();
+      }
+    });
+  });
+
+  use("user").then(function (user) {
+    if (!user) return;
+    Promise.resolve(user.can("data.write")).then(function (ok) {
+      if (ok === false) readOnlyMode("보기 전용으로 열려 있어 기록을 추가하거나 고칠 수 없습니다.");
+    })["catch"](function () {});
+  });
+
+  renderAll();
+})();
+</script>
